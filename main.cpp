@@ -16,6 +16,7 @@
  */
 #include <stdio.h>
 
+#include "mbed.h"
 #include "lorawan/LoRaWANInterface.h"
 #include "lorawan/system/lorawan_data_structures.h"
 #include "events/EventQueue.h"
@@ -23,6 +24,8 @@
 // Application helpers
 #include "trace_helper.h"
 #include "lora_radio_helper.h"
+#include "TinyGPSPlus.h"
+#include "gps.h"
 
 using namespace events;
 
@@ -35,7 +38,7 @@ uint8_t rx_buffer[30];
 /*
  * Sets up an application dependent transmission timer in ms. Used only when Duty Cycling is off for testing
  */
-#define TX_TIMER                        10000
+#define TX_TIMER                        30s
 
 /**
  * Maximum number of events for the event queue.
@@ -75,6 +78,21 @@ static LoRaWANInterface lorawan(radio);
  * Application specific callbacks
  */
 static lorawan_app_callbacks_t callbacks;
+
+// Store Lat & Long in six bytes of payload
+void pack_lat_lon(double lat, double lon) {
+  uint32_t LatitudeBinary;
+  uint32_t LongitudeBinary;
+  LatitudeBinary = ((lat + 90) / 180.0) * 16777215;
+  LongitudeBinary = ((lon + 180) / 360.0) * 16777215;
+
+  tx_buffer[0] = (LatitudeBinary >> 16) & 0xFF;
+  tx_buffer[1] = (LatitudeBinary >> 8) & 0xFF;
+  tx_buffer[2] = LatitudeBinary & 0xFF;
+  tx_buffer[3] = (LongitudeBinary >> 16) & 0xFF;
+  tx_buffer[4] = (LongitudeBinary >> 8) & 0xFF;
+  tx_buffer[5] = LongitudeBinary & 0xFF;
+}
 
 /**
  * Entry point for application
@@ -128,6 +146,8 @@ int main(void)
 
     printf("\r\n Connection - In Progress ...\r\n");
 
+    ev_queue.call_every(1ms, gps_loop, 0);
+
     // make your event queue dispatching events forever
     ev_queue.dispatch_forever();
 
@@ -139,13 +159,31 @@ int main(void)
  */
 static void send_message()
 {
-    uint16_t packet_len;
+    uint16_t packet_len = 9;
     int16_t retcode;
-    int32_t dummy_value = 0;
 
-    packet_len = sprintf((char *) tx_buffer, "Dummy Value is %d",
-                         sensor_value);
+    double lat;
+    double lon;
+    uint16_t altitudeGps;
+    uint8_t sats;
+    uint16_t speed;
 
+    display_gps_info();
+
+    lat = gps_parser.location.lat();
+    lon = gps_parser.location.lng();
+    pack_lat_lon(lat, lon);
+    altitudeGps = (uint16_t)gps_parser.altitude.meters();
+    speed = (uint16_t)gps_parser.speed.kmph();  // convert from double
+    if (speed > 255)
+        speed = 255;  // don't wrap around.
+    sats = gps_parser.satellites.value();
+
+    tx_buffer[6] = (altitudeGps >> 8) & 0xFF;
+    tx_buffer[7] = altitudeGps & 0xFF;
+    tx_buffer[8] = speed & 0xFF;
+    tx_buffer[9] = sats & 0xFF;
+    
     retcode = lorawan.send(MBED_CONF_LORA_APP_PORT, tx_buffer, packet_len,
                            MSG_UNCONFIRMED_FLAG);
 
@@ -156,7 +194,7 @@ static void send_message()
         if (retcode == LORAWAN_STATUS_WOULD_BLOCK) {
             //retry in 3 seconds
             if (MBED_CONF_LORA_DUTY_CYCLE_ON) {
-                ev_queue.call_in(3000, send_message);
+                ev_queue.call_in(3s, send_message);
             }
         }
         return;
