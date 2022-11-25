@@ -6,9 +6,7 @@
  * GPS Setup
  */
 
-static UnbufferedSerial gps(PB_6, PB_7, 9600);
-char buf[128];
-uint8_t incoming;
+static BufferedSerial gps(PB_6, PB_7, 9600);
 TinyGPSPlus gps_parser;
 
 // PC
@@ -19,14 +17,17 @@ void gps_time(char* buffer, uint8_t size) {
 }
 
 void gps_loop(bool print_it) {
-    while (gps.readable()) {
-        if (uint32_t num = gps.read(&incoming, 1)) {
-            // Echo the input back to the terminal.
-            if (print_it)
-                pc.write(&incoming, 1);
-            
-            gps_parser.encode(incoming);
-        }
+    char incoming;
+    if (uint32_t num = gps.read(&incoming, 1)) {
+        // Echo the input back to the terminal.
+        if (print_it)
+            pc.write(&incoming, num);
+
+        // If waiting for ack, also check for ack.
+        if (ack)
+            ack_rec = wait_for_ack(incoming);
+
+        gps_parser.encode(incoming);
     }
 }
 
