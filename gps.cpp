@@ -8,6 +8,10 @@
 
 static BufferedSerial gps(PB_6, PB_7, 9600);
 TinyGPSPlus gps_parser;
+char buf[100] = {0};
+uint8_t offset = 0;
+bool ack_rec = false; // Have we recieved an ack from the gps
+bool ack = false; // Are waiting for an ack from gps
 
 // PC
 static BufferedSerial pc(USBTX, USBRX);
@@ -65,5 +69,38 @@ void display_gps_info(void)  {
     // display HDOP
     if (gps_parser.hdop.isValid()) {
         printf(" HDOP: %.2f\n", (gps_parser.hdop.value()/100.0));
+    }
+}
+
+void init_gps(void) {
+    if (gps.writable()) {
+        gps.write(NMEA_CONFIG_STRING, sizeof(NMEA_CONFIG_STRING));
+        gps.write(PMTK_SET_NMEA_UPDATE_1HZ, sizeof(PMTK_SET_NMEA_UPDATE_1HZ));
+        gps.write(PMTK_SET_BALLOON_MODE, sizeof(PMTK_SET_BALLOON_MODE));
+        ack = true;
+    }
+}
+
+bool wait_for_ack(char c) {
+    switch(c) {
+        case '$':
+            memset(buf, 0, sizeof(buf));
+            offset = 0;
+            buf[offset] = c;
+            break;
+        case '\n':
+        case '\r':
+            break;
+        default:
+            offset++;
+            buf[offset] = c;
+            break;
+    }
+    if (!strcmp(buf, PMTK_SET_BALLOON_MODE_RESPONSE)) {
+        ack = false;
+        printf("\r\n ACK Recieved! \r\n");
+        return true;
+    } else {
+        return false;
     }
 }
