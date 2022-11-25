@@ -128,12 +128,12 @@ int main(void)
            CONFIRMED_MSG_RETRY_COUNTER);
 
     // Enable adaptive data rate
-    if (lorawan.enable_adaptive_datarate() != LORAWAN_STATUS_OK) {
-        printf("\r\n enable_adaptive_datarate failed! \r\n");
+    if (lorawan.disable_adaptive_datarate() != LORAWAN_STATUS_OK) {
+        printf("\r\n disable_adaptive_datarate failed! \r\n");
         return -1;
     }
 
-    printf("\r\n Adaptive data  rate (ADR) - Enabled \r\n");
+    printf("\r\n Adaptive data  rate (ADR) - Disabled \r\n");
 
     retcode = lorawan.connect();
 
