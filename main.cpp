@@ -59,7 +59,9 @@ uint8_t rx_buffer[30];
 * providing an event queue to the stack that will be used for ISR deferment as
 * well as application information event queuing.
 */
-static EventQueue ev_queue(MAX_NUMBER_OF_EVENTS *EVENTS_EVENT_SIZE);
+static EventQueue lora_ev_queue(MAX_NUMBER_OF_EVENTS *EVENTS_EVENT_SIZE);
+static EventQueue gps_ev_queue(MAX_NUMBER_OF_EVENTS *EVENTS_EVENT_SIZE);
+Thread thread;
 
 /**
  * Event handler.
@@ -106,7 +108,7 @@ int main(void)
     lorawan_status_t retcode;
 
     // Initialize LoRaWAN stack
-    if (lorawan.initialize(&ev_queue) != LORAWAN_STATUS_OK) {
+    if (lorawan.initialize(&lora_ev_queue) != LORAWAN_STATUS_OK) {
         printf("\r\n LoRa initialization failed! \r\n");
         return -1;
     }
@@ -146,10 +148,11 @@ int main(void)
 
     printf("\r\n Connection - In Progress ...\r\n");
 
-    ev_queue.call_every(1ms, gps_loop, 0);
+    gps_ev_queue.call_every(1ms, gps_loop, 0);
 
     // make your event queue dispatching events forever
-    ev_queue.dispatch_forever();
+    thread.start(callback(&gps_ev_queue, &EventQueue::dispatch_forever));
+    lora_ev_queue.dispatch_forever();
 
     return 0;
 }
@@ -194,7 +197,7 @@ static void send_message()
         if (retcode == LORAWAN_STATUS_WOULD_BLOCK) {
             //retry in 3 seconds
             if (MBED_CONF_LORA_DUTY_CYCLE_ON) {
-                ev_queue.call_in(3s, send_message);
+                lora_ev_queue.call_in(3s, send_message);
             }
         }
         return;
@@ -238,12 +241,12 @@ static void lora_event_handler(lorawan_event_t event)
             if (MBED_CONF_LORA_DUTY_CYCLE_ON) {
                 send_message();
             } else {
-                ev_queue.call_every(TX_TIMER, send_message);
+                lora_ev_queue.call_every(TX_TIMER, send_message);
             }
 
             break;
         case DISCONNECTED:
-            ev_queue.break_dispatch();
+            lora_ev_queue.break_dispatch();
             printf("\r\n Disconnected Successfully \r\n");
             break;
         case TX_DONE:
