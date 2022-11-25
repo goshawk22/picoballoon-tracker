@@ -104,3 +104,18 @@ bool wait_for_ack(char c) {
         return false;
     }
 }
+
+bool enter_gps_standby(void) {
+    if (gps.writable()) {
+        gps.write(STANDBY_STRING, sizeof(STANDBY_STRING));
+        return true;
+    } else {
+        printf("GPS is not writeable, cannot enter standby");
+        return false;
+    }
+}
+
+void exit_gps_standby(void) {
+    gps.write(WAKEUP_STRING, sizeof(WAKEUP_STRING));
+    init_gps();
+}

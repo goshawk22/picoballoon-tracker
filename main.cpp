@@ -233,7 +233,12 @@ static void receive_message()
         printf("%02x ", rx_buffer[i]);
     }
     printf("\r\n");
-    
+    if (rx_buffer[0] == 0x00) {
+        enter_gps_standby();
+    } else if (rx_buffer[0] == 0x01) {
+        exit_gps_standby();
+    }
+
     memset(rx_buffer, 0, sizeof(rx_buffer));
 }
 

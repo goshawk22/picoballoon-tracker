@@ -10,7 +10,12 @@ void gps_time(char *buffer, uint8_t size);
 void display_gps_info(void);
 void init_gps(void);
 bool wait_for_ack(char c);
+bool enter_gps_standby(void);
+void exit_gps_standby(void);
+
 // PMTK strings
+#define STANDBY_STRING "$PMTK161,0*28\r\n"
+#define WAKEUP_STRING "WAKE UP\r\n"
 #define NMEA_CONFIG_STRING "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n"
 #define PMTK_SET_NMEA_UPDATE_1HZ  "$PMTK220,1000*1F\r\n"
 #define PMTK_SET_NMEA_UPDATE_10HZ "$PMTK220,100*2F\r\n"
