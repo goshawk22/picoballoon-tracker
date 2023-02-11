@@ -164,7 +164,6 @@ int main(void)
 
     gps_ev_queue.call(init_gps);
     gps_ev_queue.call_every(1ms, gps_loop);
-    gps_ev_queue.call_every(10s, display_gps_info);
 
     // Initialize the BMP280
     bmp280.initialize();

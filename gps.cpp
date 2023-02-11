@@ -29,7 +29,7 @@ void gps_loop(void) {
     }
 }
 
-//Display new GPS info
+// Display new GPS info, used for debugging
 void display_gps_info(void)  {
     //We have new GPS data to deal with!
     printf("\n");
