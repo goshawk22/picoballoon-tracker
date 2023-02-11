@@ -1,5 +1,76 @@
 {
-    "K64F_SX126X": {
-        "inherits": ["K64F"]
+    "LORA_E5": {
+        "inherits": [
+            "MCU_STM32WLE5xC"
+        ],
+        "device_name": "STM32WLE5JCIx"
+    },
+    "LORA_E5_BREAKOUT": {
+        "inherits": [
+            "LORA_E5"
+        ],
+        "macros_add": [
+            "LED1=PB_5", 
+            "LED2=PB_10",
+            "BUTTON1=PB_13"
+        ]
+    },
+    "LORA_E5_MINI": {
+        "inherits": [
+            "LORA_E5"
+        ],
+        "macros_add": [
+            "LED1=PB_5", 
+            "BUTTON1=PB_13"
+        ]
+    },
+    "LORA_E5_DEV_BOARD": {
+        "inherits": [
+            "LORA_E5"
+        ],
+        "macros_add": [
+            "LED1=PB_5", 
+            "EN_3V3=PA_9", 
+            "EN_5V=PB_10", 
+            "BUTTON1=PB_13",
+            "BUTTON2=PA_0",
+            "RS485_REDE=PB_4"
+        ]
+    },
+    "LORA_E5_TINY": {
+        "inherits": [
+            "LORA_E5"
+        ],
+        "macros_add": [
+            "LED1=PA_9", 
+            "LED2=PB_13", 
+            "BUTTON1=PB_4"
+        ]
+    },
+    "RAK3172": {
+        "inherits": [
+            "MCU_STM32WLE5xC"
+        ],
+        "device_name": "STM32WLE5CCUx"
+    },
+    "RAK3172_BREAKOUT": {
+        "inherits": [
+            "RAK3172"
+        ],
+        "macros_add": [
+            "LED1=PA_9", 
+            "LED2=PA_10"
+        ]
+    },
+    "RAK3172SIP": {
+        "inherits": [
+            "MCU_STM32WLE5xC"
+        ],
+        "device_name": "STM32WLE5CCUx"
+    },
+    "RAK3272_BREAKOUT": {
+        "inherits": [
+            "RAK3172SIP"
+        ]
     }
 }
