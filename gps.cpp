@@ -8,25 +8,19 @@
 
 static BufferedSerial gps(PB_6, PB_7, 9600);
 TinyGPSPlus gps_parser;
+
 char buf[100] = {0};
 uint8_t offset = 0;
 bool ack_rec = false; // Have we recieved an ack from the gps
 bool ack = false; // Are waiting for an ack from gps
 
-// PC
-static BufferedSerial pc(USBTX, USBRX);
-
 void gps_time(char* buffer, uint8_t size) {
     printf(buffer, size, "%02d:%02d:%02d", gps_parser.time.hour(), gps_parser.time.minute(), gps_parser.time.second());
 }
 
-void gps_loop(bool print_it) {
+void gps_loop(void) {
     char incoming;
     if (uint32_t num = gps.read(&incoming, 1)) {
-        // Echo the input back to the terminal.
-        if (print_it)
-            pc.write(&incoming, num);
-
         // If waiting for ack, also check for ack.
         if (ack)
             ack_rec = wait_for_ack(incoming);

@@ -157,7 +157,7 @@ int main(void)
     printf("\r\n Connection - In Progress ...\r\n");
 
     gps_ev_queue.call(init_gps);
-    gps_ev_queue.call_every(1ms, gps_loop, 0);
+    gps_ev_queue.call_every(1ms, gps_loop);
     gps_ev_queue.call_every(10s, display_gps_info);
 
 
