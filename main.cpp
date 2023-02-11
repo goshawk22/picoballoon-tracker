@@ -26,6 +26,7 @@
 #include "lora_radio_helper.h"
 #include "TinyGPSPlus.h"
 #include "gps.h"
+#include "BMP280.h"
 
 using namespace events;
 
@@ -85,6 +86,11 @@ static lorawan_app_callbacks_t callbacks;
  * Pin to control power to GPS
  */
 DigitalOut p_vcc(PB_5);
+
+/**
+ * BMP280 I2C
+ */
+BMP280 bmp280(PA_11, PA_12, 0x76);
 
 // Store Lat & Long in six bytes of payload
 void pack_lat_lon(double lat, double lon) {
@@ -160,6 +166,8 @@ int main(void)
     gps_ev_queue.call_every(1ms, gps_loop);
     gps_ev_queue.call_every(10s, display_gps_info);
 
+    // Initialize the BMP280
+    bmp280.initialize();
 
     // make event queue dispatching events forever
     thread.start(callback(&gps_ev_queue, &EventQueue::dispatch_forever));
@@ -172,7 +180,7 @@ int main(void)
  * Sends a message to the Network Server
  */
 static void send_message() {
-    uint16_t packet_len = 10;
+    uint16_t packet_len = 15;
     int16_t retcode;
 
     double lat;
@@ -180,6 +188,10 @@ static void send_message() {
     uint16_t altitude;
     uint8_t sats;
     uint8_t speed;
+
+    float raw_temp;
+    uint16_t temp;
+    uint32_t pressure;
 
     // Packet all the GPS information
     lat = gps_parser.location.lat();
@@ -200,6 +212,18 @@ static void send_message() {
     tx_buffer[7] = altitude & 0xFF;
     tx_buffer[8] = speed & 0xFF;
     tx_buffer[9] = sats & 0xFF;
+    
+    raw_temp = bmp280.getTemperature();
+    pressure = bmp280.getPressure();
+    
+    temp = int(raw_temp * 10 + 0.5) + 128; // Encode the temperature to avoid negatives.
+
+    tx_buffer[10] = (pressure >> 16) & 0xFF;
+    tx_buffer[11] = (pressure >> 8) & 0xFF;
+    tx_buffer[12] = pressure & 0xFF;
+
+    tx_buffer[13] = (temp >> 8) & 0xFF;
+    tx_buffer[14] = temp & 0xFF;
     
     retcode = lorawan.send(MBED_CONF_LORA_APP_PORT, tx_buffer, packet_len,
                            MSG_UNCONFIRMED_FLAG);
