@@ -93,12 +93,12 @@ void pack_lat_lon(double lat, double lon) {
   LatitudeBinary = ((lat + 90) / 180.0) * 16777215;
   LongitudeBinary = ((lon + 180) / 360.0) * 16777215;
 
-  tx_buffer[1] = (LatitudeBinary >> 16) & 0xFF;
-  tx_buffer[2] = (LatitudeBinary >> 8) & 0xFF;
-  tx_buffer[3] = LatitudeBinary & 0xFF;
-  tx_buffer[4] = (LongitudeBinary >> 16) & 0xFF;
-  tx_buffer[5] = (LongitudeBinary >> 8) & 0xFF;
-  tx_buffer[6] = LongitudeBinary & 0xFF;
+  tx_buffer[0] = (LatitudeBinary >> 16) & 0xFF;
+  tx_buffer[1] = (LatitudeBinary >> 8) & 0xFF;
+  tx_buffer[2] = LatitudeBinary & 0xFF;
+  tx_buffer[3] = (LongitudeBinary >> 16) & 0xFF;
+  tx_buffer[4] = (LongitudeBinary >> 8) & 0xFF;
+  tx_buffer[5] = LongitudeBinary & 0xFF;
 }
 
 /**
@@ -181,16 +181,6 @@ static void send_message() {
     uint8_t sats;
     uint16_t speed;
 
-    /* GPS init byte
-    0 = failed
-    1 = successful
-    */
-    if (ack_rec) {
-        tx_buffer[0] = 1;
-    } else {
-        tx_buffer[0] = 0;
-    }
-
     // Packet all the GPS information
     lat = gps_parser.location.lat();
     lon = gps_parser.location.lng();
@@ -201,10 +191,10 @@ static void send_message() {
         speed = 255;  // don't wrap around.
     sats = gps_parser.satellites.value();
 
-    tx_buffer[7] = (altitudeGps >> 8) & 0xFF;
-    tx_buffer[8] = altitudeGps & 0xFF;
-    tx_buffer[9] = speed & 0xFF;
-    tx_buffer[10] = sats & 0xFF;
+    tx_buffer[6] = (altitudeGps >> 8) & 0xFF;
+    tx_buffer[7] = altitudeGps & 0xFF;
+    tx_buffer[8] = speed & 0xFF;
+    tx_buffer[9] = sats & 0xFF;
     
     retcode = lorawan.send(MBED_CONF_LORA_APP_PORT, tx_buffer, packet_len,
                            MSG_UNCONFIRMED_FLAG);
