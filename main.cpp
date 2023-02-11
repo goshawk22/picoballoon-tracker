@@ -177,22 +177,27 @@ static void send_message() {
 
     double lat;
     double lon;
-    uint16_t altitudeGps;
+    uint16_t altitude;
     uint8_t sats;
-    uint16_t speed;
+    uint8_t speed;
 
     // Packet all the GPS information
     lat = gps_parser.location.lat();
     lon = gps_parser.location.lng();
     pack_lat_lon(lat, lon);
-    altitudeGps = (uint16_t)gps_parser.altitude.meters();
+
+    altitude = (uint16_t)gps_parser.altitude.meters();
+    if (altitude < 0)
+        altitude = 0; // avoid negatives, they are most likely a result of a poor fix or bug in the code and it's easier to use unsigned integers.
+
     speed = (uint16_t)gps_parser.speed.kmph();  // convert from double
     if (speed > 255)
         speed = 255;  // don't wrap around.
+    
     sats = gps_parser.satellites.value();
 
-    tx_buffer[6] = (altitudeGps >> 8) & 0xFF;
-    tx_buffer[7] = altitudeGps & 0xFF;
+    tx_buffer[6] = (altitude >> 8) & 0xFF;
+    tx_buffer[7] = altitude & 0xFF;
     tx_buffer[8] = speed & 0xFF;
     tx_buffer[9] = sats & 0xFF;
     
