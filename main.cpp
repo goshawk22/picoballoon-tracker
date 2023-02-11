@@ -81,6 +81,11 @@ static LoRaWANInterface lorawan(radio);
  */
 static lorawan_app_callbacks_t callbacks;
 
+/**
+ * Pin to control power to GPS
+ */
+DigitalOut p_vcc(PB_5);
+
 // Store Lat & Long in six bytes of payload
 void pack_lat_lon(double lat, double lon) {
   uint32_t LatitudeBinary;
@@ -103,6 +108,9 @@ int main(void)
 {
     // setup tracing
     setup_trace();
+
+    // Turn on GPS
+    p_vcc.write(1);
 
     // stores the status of a call to LoRaWAN protocol
     lorawan_status_t retcode;
