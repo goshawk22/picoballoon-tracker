@@ -61,8 +61,12 @@ uint8_t rx_buffer[30];
 * well as application information event queuing.
 */
 static EventQueue lora_ev_queue(MAX_NUMBER_OF_EVENTS *EVENTS_EVENT_SIZE);
-static EventQueue gps_ev_queue(MAX_NUMBER_OF_EVENTS *EVENTS_EVENT_SIZE);
-Thread thread;
+
+/**
+ * Thread to run the gps loop. Allows us to continuously feed the TinyGPSPlus object
+ * while not blocking any LoRa events.
+ */
+Thread gps_thread;
 
 /**
  * Event handler.
@@ -117,6 +121,9 @@ int main(void)
 
     // Turn on GPS
     p_vcc.write(1);
+    // Wait for it to turn on and then initialize it
+    ThisThread::sleep_for(500ms);
+    init_gps();
 
     // stores the status of a call to LoRaWAN protocol
     lorawan_status_t retcode;
@@ -162,14 +169,13 @@ int main(void)
 
     printf("\r\n Connection - In Progress ...\r\n");
 
-    gps_ev_queue.call(init_gps);
-    gps_ev_queue.call_every(1ms, gps_loop);
+    // Start feeding the gps object
+    gps_thread.start(gps_loop);
 
     // Initialize the BMP280
     bmp280.initialize();
 
     // make event queue dispatching events forever
-    thread.start(callback(&gps_ev_queue, &EventQueue::dispatch_forever));
     lora_ev_queue.dispatch_forever();
 
     return 0;

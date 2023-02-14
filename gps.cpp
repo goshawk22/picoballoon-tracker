@@ -20,12 +20,14 @@ void gps_time(char* buffer, uint8_t size) {
 
 void gps_loop(void) {
     char incoming;
-    if (uint32_t num = gps.read(&incoming, 1)) {
-        // If waiting for ack, also check for ack.
-        if (ack)
-            ack_rec = wait_for_ack(incoming);
+    while (true) {
+        if (uint32_t num = gps.read(&incoming, 1)) {
+            // If waiting for ack, also check for ack.
+            if (ack)
+                ack_rec = wait_for_ack(incoming);
 
-        gps_parser.encode(incoming);
+            gps_parser.encode(incoming);
+        }
     }
 }
 
