@@ -24,7 +24,6 @@
 // Application helpers
 #include "trace_helper.h"
 #include "lora_radio_helper.h"
-#include "TinyGPSPlus.h"
 #include "gps.h"
 #include "BMP280.h"
 
