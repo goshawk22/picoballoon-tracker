@@ -236,12 +236,6 @@ static void send_message() {
         retcode == LORAWAN_STATUS_WOULD_BLOCK ? printf("send - WOULD BLOCK\r\n")
         : printf("\r\n send() - Error code %d \r\n", retcode);
 
-        if (retcode == LORAWAN_STATUS_WOULD_BLOCK) {
-            //retry in 3 seconds
-            if (MBED_CONF_LORA_DUTY_CYCLE_ON) {
-                lora_ev_queue.call_in(3s, send_message);
-            }
-        }
         return;
     }
 
@@ -285,12 +279,7 @@ static void lora_event_handler(lorawan_event_t event)
     switch (event) {
         case CONNECTED:
             printf("\r\n Connection - Successful \r\n");
-            if (MBED_CONF_LORA_DUTY_CYCLE_ON) {
-                send_message();
-            } else {
-                lora_ev_queue.call_every(TX_TIMER, send_message);
-            }
-
+            send_message();
             break;
         case DISCONNECTED:
             lora_ev_queue.break_dispatch();
@@ -298,19 +287,14 @@ static void lora_event_handler(lorawan_event_t event)
             break;
         case TX_DONE:
             printf("\r\n Message Sent to Network Server \r\n");
-            if (MBED_CONF_LORA_DUTY_CYCLE_ON) {
-                send_message();
-            }
+            ThisThread::sleep_for(60s);
+            send_message();
             break;
         case TX_TIMEOUT:
         case TX_ERROR:
         case TX_CRYPTO_ERROR:
         case TX_SCHEDULING_ERROR:
             printf("\r\n Transmission Error - EventCode = %d \r\n", event);
-            // try again
-            if (MBED_CONF_LORA_DUTY_CYCLE_ON) {
-                send_message();
-            }
             break;
         case RX_DONE:
             printf("\r\n Received message from Network Server \r\n");
@@ -325,9 +309,6 @@ static void lora_event_handler(lorawan_event_t event)
             break;
         case UPLINK_REQUIRED:
             printf("\r\n Uplink required by NS \r\n");
-            if (MBED_CONF_LORA_DUTY_CYCLE_ON) {
-                send_message();
-            }
             break;
         default:
             MBED_ASSERT("Unknown Event");
