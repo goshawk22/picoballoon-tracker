@@ -5,6 +5,7 @@
     "target_overrides": {
         "*": {
             "platform.stdio-convert-newlines": true,
+            "platform.stdio-buffered-serial": 0,
             "platform.stdio-baud-rate": 115200,
             "platform.default-serial-baud-rate": 115200,
             "mbed-trace.enable": false,
