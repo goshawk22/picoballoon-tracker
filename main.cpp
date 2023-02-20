@@ -25,7 +25,7 @@
 #include "trace_helper.h"
 #include "lora_radio_helper.h"
 #include "gps.h"
-#include "BMP280.h"
+#include "bmp280.h"
 
 using namespace events;
 
@@ -90,11 +90,6 @@ static lorawan_app_callbacks_t callbacks;
  */
 DigitalOut p_vcc(PB_5);
 
-/**
- * BMP280 I2C
- */
-BMP280 bmp280(PA_11, PA_12, 0x76);
-
 // Store Lat & Long in six bytes of payload
 void pack_lat_lon(double lat, double lon) {
   uint32_t LatitudeBinary;
@@ -123,6 +118,9 @@ int main(void)
     // Wait for it to turn on and then initialize it
     ThisThread::sleep_for(500ms);
     init_gps();
+
+    // Initialize the BMP280
+    bmp280_initialize();
 
     // stores the status of a call to LoRaWAN protocol
     lorawan_status_t retcode;
@@ -171,9 +169,6 @@ int main(void)
     // Start feeding the gps object
     gps_thread.start(gps_loop);
 
-    // Initialize the BMP280
-    bmp280.initialize();
-
     // make event queue dispatching events forever
     lora_ev_queue.dispatch_forever();
 
@@ -217,8 +212,8 @@ static void send_message() {
     tx_buffer[8] = speed & 0xFF;
     tx_buffer[9] = sats & 0xFF;
     
-    raw_temp = bmp280.getTemperature();
-    pressure = bmp280.getPressure();
+    raw_temp = bmp280_getTemperature();
+    pressure = bmp280_getPressure();
     
     temp = int(raw_temp * 10 + 0.5) + 128; // Encode the temperature to avoid negatives.
 
