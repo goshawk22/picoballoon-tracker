@@ -7,7 +7,7 @@ on:
 jobs: 
   build-cli-v1:
     container:
-      image: ghcr.io/armmbed/mbed-os-env:master-latest
+      image: ghcr.io/goshawk22/mbed-os-env:6.16-latest 
 
     runs-on: ubuntu-latest
 
