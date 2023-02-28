@@ -19,14 +19,20 @@ void gps_time(char* buffer, uint8_t size) {
 }
 
 void gps_loop(void) {
+    printf("\r\n GPS Loop Start \r\n");
     char incoming;
-    while (true) {
+    time_t seconds = time(NULL);
+    while (!gps_parser.location.isValid()) {
         if (uint32_t num = gps.read(&incoming, 1)) {
             // If waiting for ack, also check for ack.
             if (ack)
                 ack_rec = wait_for_ack(incoming);
-
+        
+            //printf("%c", incoming);
             gps_parser.encode(incoming);
+        }
+        if ((time(NULL) - seconds) > 30) {
+            break;
         }
     }
 }
@@ -69,11 +75,14 @@ void display_gps_info(void)  {
 }
 
 void init_gps(void) {
+    printf("\r\n GPS Init Start \r\n");
     if (gps.writable()) {
         gps.write(NMEA_CONFIG_STRING, sizeof(NMEA_CONFIG_STRING));
         gps.write(PMTK_SET_NMEA_UPDATE_1HZ, sizeof(PMTK_SET_NMEA_UPDATE_1HZ));
         gps.write(PMTK_SET_BALLOON_MODE, sizeof(PMTK_SET_BALLOON_MODE));
         ack = true;
+    } else {
+        printf("\r\n GPS NOT WRITEABLE!!!\r\n");
     }
 }
 
@@ -113,5 +122,4 @@ bool enter_gps_standby(void) {
 
 void exit_gps_standby(void) {
     gps.write(WAKEUP_STRING, sizeof(WAKEUP_STRING));
-    init_gps();
 }

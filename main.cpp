@@ -61,12 +61,6 @@ uint8_t rx_buffer[30];
 static EventQueue lora_ev_queue(MAX_NUMBER_OF_EVENTS *EVENTS_EVENT_SIZE);
 
 /**
- * Thread to run the gps loop. Allows us to continuously feed the TinyGPSPlus object
- * while not blocking any LoRa events.
- */
-Thread gps_thread;
-
-/**
  * Event handler.
  *
  * This will be passed to the LoRaWAN stack to queue events for the
@@ -109,14 +103,13 @@ void pack_lat_lon(double lat, double lon) {
  */
 int main(void)
 {
+    mbed_file_handle(STDIN_FILENO)->enable_input(true);
+    mbed_file_handle(STDOUT_FILENO)->enable_output(true);
     // setup tracing
     setup_trace();
 
     // Turn on GPS
     p_vcc.write(1);
-    // Wait for it to turn on and then initialize it
-    ThisThread::sleep_for(500ms);
-    init_gps();
 
     // stores the status of a call to LoRaWAN protocol
     lorawan_status_t retcode;
@@ -162,20 +155,31 @@ int main(void)
 
     printf("\r\n Connection - In Progress ...\r\n");
 
-    // Start feeding the gps object
-    gps_thread.start(gps_loop);
-
     // make event queue dispatching events forever
     lora_ev_queue.dispatch_forever();
 
     return 0;
 }
 
+void standby(Kernel::Clock::duration_u32 sec) {
+    enter_gps_standby();
+    mbed_file_handle(STDIN_FILENO)->enable_input(false);
+    mbed_file_handle(STDOUT_FILENO)->enable_output(false);
+
+    ThisThread::sleep_for(sec);
+
+    mbed_file_handle(STDIN_FILENO)->enable_input(true);
+    mbed_file_handle(STDOUT_FILENO)->enable_output(true);
+    exit_gps_standby();
+    ThisThread::sleep_for(2s);
+    gps_loop();
+}
+
 /**
  * Sends a message to the Network Server
  */
 static void send_message() {
-    uint16_t packet_len = 15;
+    uint16_t packet_len = 11;
     int16_t retcode;
 
     double lat;
@@ -203,7 +207,7 @@ static void send_message() {
     tx_buffer[7] = altitude & 0xFF;
     tx_buffer[8] = speed & 0xFF;
     tx_buffer[9] = sats & 0xFF;
-    
+
 
 
     retcode = lorawan.send(MBED_CONF_LORA_APP_PORT, tx_buffer, packet_len,
@@ -239,11 +243,6 @@ static void receive_message()
         printf("%02x ", rx_buffer[i]);
     }
     printf("\r\n");
-    if (rx_buffer[0] == 0x00) {
-        enter_gps_standby();
-    } else if (rx_buffer[0] == 0x01) {
-        exit_gps_standby();
-    }
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
 }
@@ -256,6 +255,9 @@ static void lora_event_handler(lorawan_event_t event)
     switch (event) {
         case CONNECTED:
             printf("\r\n Connection - Successful \r\n");
+            // Start GPS Loop
+            init_gps();
+            gps_loop();
             send_message();
             break;
         case DISCONNECTED:
@@ -264,7 +266,7 @@ static void lora_event_handler(lorawan_event_t event)
             break;
         case TX_DONE:
             printf("\r\n Message Sent to Network Server \r\n");
-            ThisThread::sleep_for(60s);
+            standby(60s);
             send_message();
             break;
         case TX_TIMEOUT:
