@@ -143,7 +143,15 @@ int main(void)
         return -1;
     }
 
-    printf("\r\n Adaptive data  rate (ADR) - Disabled \r\n");
+    printf("\r\n Adaptive data rate (ADR) - Disabled \r\n");
+
+    // Set data rate
+    if (lorawan.set_datarate(0) != LORAWAN_STATUS_OK) {
+        printf("\r\n set_datarate failed! \r\n");
+        return -1;
+    }
+
+    printf("\r\n Data rate set successfully \r\n");
 
     retcode = lorawan.connect();
 
