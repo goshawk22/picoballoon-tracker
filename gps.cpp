@@ -20,6 +20,8 @@ void gps_time(char* buffer, uint8_t size) {
 
 void gps_loop(void) {
     printf("\r\n GPS Loop Start \r\n");
+    gps.enable_input(true);
+    gps.enable_output(true);
     char incoming;
     time_t seconds = time(NULL);
     while (!gps_parser.location.isValid()) {
@@ -35,6 +37,8 @@ void gps_loop(void) {
             break;
         }
     }
+    gps.enable_input(false);
+    gps.enable_output(false);
 }
 
 // Display new GPS info, used for debugging

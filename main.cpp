@@ -171,15 +171,13 @@ int main(void)
 }
 
 void standby(Kernel::Clock::duration_u32 sec) {
-    enter_gps_standby();
     mbed_file_handle(STDIN_FILENO)->enable_input(false);
     mbed_file_handle(STDOUT_FILENO)->enable_output(false);
-
+    p_vcc.write(0);
     ThisThread::sleep_for(sec);
-
+    p_vcc.write(1);
     mbed_file_handle(STDIN_FILENO)->enable_input(true);
     mbed_file_handle(STDOUT_FILENO)->enable_output(true);
-    exit_gps_standby();
     ThisThread::sleep_for(2s);
     gps_loop();
 }
@@ -222,8 +220,6 @@ static void send_message() {
     tx_buffer[7] = altitude & 0xFF;
     tx_buffer[8] = speed & 0xFF;
     tx_buffer[9] = sats & 0xFF;
-
-
 
     retcode = lorawan.send(MBED_CONF_LORA_APP_PORT, tx_buffer, packet_len,
                            MSG_UNCONFIRMED_FLAG);
