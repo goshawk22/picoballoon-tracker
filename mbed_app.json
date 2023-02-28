@@ -5,7 +5,7 @@
     "target_overrides": {
         "*": {
             "platform.stdio-convert-newlines": true,
-            "platform.stdio-buffered-serial": 0,
+            "platform.stdio-buffered-serial": 1,
             "platform.stdio-baud-rate": 115200,
             "platform.default-serial-baud-rate": 115200,
             "mbed-trace.enable": false,
@@ -23,7 +23,9 @@
         },
         "RAK3172": {
             "stm32wl-lora-driver.rf_switch_config": 2,
-            "stm32wl-lora-driver.crystal_select": 0
+            "stm32wl-lora-driver.crystal_select": 0,
+            "target.stdio_uart_tx": "PA_2_ALT0",
+            "target.stdio_uart_rx": "PA_3_ALT0"
         }
     },
     "macros": ["MBEDTLS_USER_CONFIG_FILE=\"mbedtls_lora_config.h\""]
