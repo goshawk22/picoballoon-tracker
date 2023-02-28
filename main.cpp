@@ -17,6 +17,7 @@
 #include <stdio.h>
 
 #include "mbed.h"
+#include "mbed_stats.h"
 #include "lorawan/LoRaWANInterface.h"
 #include "lorawan/system/lorawan_data_structures.h"
 #include "events/EventQueue.h"
@@ -187,6 +188,12 @@ static void send_message() {
     uint16_t altitude;
     uint8_t sats;
     uint8_t speed;
+
+    mbed_stats_cpu_t stats;
+    mbed_stats_cpu_get(&stats);
+    printf("\r\nUptime: %llu \r\n", stats.uptime / 1000);
+    printf("\r\nSleep time: %llu \r\n", stats.sleep_time / 1000);
+    printf("\r\nDeep Sleep: %llu \r\n", stats.deep_sleep_time / 1000);
 
     // Packet all the GPS information
     lat = gps_parser.location.lat();
