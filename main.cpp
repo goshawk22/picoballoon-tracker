@@ -110,6 +110,8 @@ void pack_lat_lon(double lat, double lon) {
  */
 int main(void)
 {
+    sleep_manager_lock_deep_sleep();
+
     mbed_file_handle(STDIN_FILENO)->enable_input(true);
     mbed_file_handle(STDOUT_FILENO)->enable_output(true);
     // setup tracing
@@ -177,6 +179,7 @@ int main(void)
 }
 
 void standby(Kernel::Clock::duration_u32 sec) {
+    sleep_manager_unlock_deep_sleep();
     mbed_file_handle(STDIN_FILENO)->enable_input(false);
     mbed_file_handle(STDOUT_FILENO)->enable_output(false);
     p_vcc.write(0);
@@ -184,6 +187,7 @@ void standby(Kernel::Clock::duration_u32 sec) {
     p_vcc.write(1);
     mbed_file_handle(STDIN_FILENO)->enable_input(true);
     mbed_file_handle(STDOUT_FILENO)->enable_output(true);
+    sleep_manager_lock_deep_sleep();
     ThisThread::sleep_for(2s);
     gps_loop();
 }
