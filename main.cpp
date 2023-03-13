@@ -90,6 +90,12 @@ static lorawan_app_callbacks_t callbacks;
  */
 DigitalOut p_vcc(PB_5);
 
+/**
+ * ADC Pin to measure battery voltage
+ */
+AnalogIn voltage(PB_3);
+
+
 // Store Lat & Long in six bytes of payload
 void pack_lat_lon(double lat, double lon) {
   uint32_t LatitudeBinary;
@@ -192,9 +198,7 @@ void standby(Kernel::Clock::duration_u32 sec) {
     gps_loop();
 }
 
-static void send_status() {
-    AnalogIn voltage(PB_3);
-    
+static void send_status() {    
     uint8_t packet_len = 1;
     int16_t retcode;
 
@@ -203,8 +207,7 @@ static void send_status() {
     uint16_t battery;
     uint8_t battery_packed;
 
-    raw_adc = voltage.read(PB_3);
-    //voltage.free();
+    raw_adc = voltage.read();
     calc_voltage = ((3.3f*raw_adc*(5.0f))/(3.0f))*(1.3f);
     battery_packed = (calc_voltage - 2)*(255/2.3f);
     tx_buffer[0] = battery_packed & 0xFF;
@@ -224,8 +227,6 @@ static void send_status() {
 }
 
 static void send_gps() {
-    AnalogIn voltage(PB_3);
-
     uint16_t packet_len = 11;
     int16_t retcode;
 
@@ -260,8 +261,7 @@ static void send_gps() {
     tx_buffer[8] = speed & 0xFF;
     tx_buffer[9] = sats & 0xFF;
 
-    raw_adc = voltage.read(PB_3);
-    //voltage.free();
+    raw_adc = voltage.read();
     calc_voltage = ((3.3f*raw_adc*(5.0f))/(3.0f))*(1.3f);
     battery_packed = (calc_voltage - 2)*(255/2.3f);
     tx_buffer[10] = battery_packed & 0xFF;
