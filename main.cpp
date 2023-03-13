@@ -38,7 +38,7 @@ uint8_t rx_buffer[30];
 /*
  * Sets up an application dependent transmission timer in ms. Used only when Duty Cycling is off for testing
  */
-#define TX_TIMER                        30s
+#define TX_TIMER                        60s
 
 /**
  * Maximum number of events for the event queue.
@@ -334,7 +334,7 @@ static void lora_event_handler(lorawan_event_t event)
             break;
         case TX_DONE:
             printf("\r\n Message Sent to Network Server \r\n");
-            standby(60s);
+            standby(TX_TIMER);
             send_message();
             break;
         case TX_TIMEOUT:
