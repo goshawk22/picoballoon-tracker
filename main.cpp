@@ -53,6 +53,12 @@ uint8_t rx_buffer[30];
 #define CONFIRMED_MSG_RETRY_COUNTER     3
 
 /**
+ * Port for different types of message
+ */
+#define GPS_PORT    2
+#define STATUS_PORT 3
+
+/**
 * This event queue is the global event queue for both the
 * application and stack. To conserve memory, the stack is designed to run
 * in the same thread as the application and the application is responsible for
@@ -182,10 +188,40 @@ void standby(Kernel::Clock::duration_u32 sec) {
     gps_loop();
 }
 
-/**
- * Sends a message to the Network Server
- */
-static void send_message() {
+static void send_status() {
+    AnalogIn voltage(PB_3);
+    
+    uint8_t packet_len = 1;
+    int16_t retcode;
+
+    float raw_adc;
+    float calc_voltage;
+    uint16_t battery;
+    uint8_t battery_packed;
+
+    raw_adc = voltage.read(PB_3);
+    //voltage.free();
+    calc_voltage = ((3.3f*raw_adc*(5.0f))/(3.0f))*(1.3f);
+    battery_packed = (calc_voltage - 2)*(255/2.3f);
+    tx_buffer[0] = battery_packed & 0xFF;
+
+    retcode = lorawan.send(STATUS_PORT, tx_buffer, packet_len,
+                           MSG_UNCONFIRMED_FLAG);
+
+    if (retcode < 0) {
+        retcode == LORAWAN_STATUS_WOULD_BLOCK ? printf("send - WOULD BLOCK\r\n")
+        : printf("\r\n send() - Error code %d \r\n", retcode);
+
+        return;
+    }
+
+    printf("\r\n %d bytes scheduled for transmission \r\n", retcode);
+    memset(tx_buffer, 0, sizeof(tx_buffer));
+}
+
+static void send_gps() {
+    AnalogIn voltage(PB_3);
+
     uint16_t packet_len = 11;
     int16_t retcode;
 
@@ -195,11 +231,10 @@ static void send_message() {
     uint8_t sats;
     uint8_t speed;
 
-    mbed_stats_cpu_t stats;
-    mbed_stats_cpu_get(&stats);
-    printf("\r\nUptime: %llu \r\n", stats.uptime / 1000);
-    printf("\r\nSleep time: %llu \r\n", stats.sleep_time / 1000);
-    printf("\r\nDeep Sleep: %llu \r\n", stats.deep_sleep_time / 1000);
+    float raw_adc;
+    float calc_voltage;
+    uint16_t battery;
+    uint8_t battery_packed;
 
     // Packet all the GPS information
     lat = gps_parser.location.lat();
@@ -221,7 +256,13 @@ static void send_message() {
     tx_buffer[8] = speed & 0xFF;
     tx_buffer[9] = sats & 0xFF;
 
-    retcode = lorawan.send(MBED_CONF_LORA_APP_PORT, tx_buffer, packet_len,
+    raw_adc = voltage.read(PB_3);
+    //voltage.free();
+    calc_voltage = ((3.3f*raw_adc*(5.0f))/(3.0f))*(1.3f);
+    battery_packed = (calc_voltage - 2)*(255/2.3f);
+    tx_buffer[10] = battery_packed & 0xFF;
+
+    retcode = lorawan.send(GPS_PORT, tx_buffer, packet_len,
                            MSG_UNCONFIRMED_FLAG);
 
     if (retcode < 0) {
@@ -233,6 +274,18 @@ static void send_message() {
 
     printf("\r\n %d bytes scheduled for transmission \r\n", retcode);
     memset(tx_buffer, 0, sizeof(tx_buffer));
+}
+
+/**
+ * Sends a message to the Network Server
+ */
+
+static void send_message() {
+    if (gps_parser.location.isValid()) {
+        send_gps();
+    } else {
+        send_status();
+    }
 }
 
 /**
