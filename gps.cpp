@@ -2,6 +2,8 @@
 #include "mbed.h"
 #include <TinyGPS++.h>
 
+#define GPS_WAIT_S                      30
+
 /**
  * GPS Setup
  */
@@ -33,7 +35,7 @@ void gps_loop(void) {
             //printf("%c", incoming);
             gps_parser.encode(incoming);
         }
-        if ((time(NULL) - seconds) > 30) {
+        if ((time(NULL) - seconds) > GPS_WAIT_S) {
             break;
         }
     }
