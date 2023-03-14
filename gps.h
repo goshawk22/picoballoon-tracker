@@ -12,6 +12,8 @@ void init_gps(void);
 bool wait_for_ack(char c);
 bool enter_gps_standby(void);
 void exit_gps_standby(void);
+bool get_need_longer_sleep(void);
+void set_need_longer_sleep(bool set_bool);
 
 // PMTK strings
 #define STANDBY_STRING "$PMTK161,0*28\r\n"

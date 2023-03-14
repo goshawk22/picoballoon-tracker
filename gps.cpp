@@ -18,6 +18,16 @@ bool ack_rec = false; // Have we recieved an ack from the gps
 bool ack = false; // Are waiting for an ack from gps
 uint8_t error_counter = 0;
 bool first_boot = true;
+bool need_longer_sleep = false;
+
+bool get_need_longer_sleep(void) {
+    return need_longer_sleep;
+}
+
+void set_need_longer_sleep(bool set_bool) {
+    need_longer_sleep = set_bool;
+    error_counter = 0;
+}
 
 void gps_time(char* buffer, uint8_t size) {
     printf(buffer, size, "%02d:%02d:%02d", gps_parser.time.hour(), gps_parser.time.minute(), gps_parser.time.second());
@@ -41,8 +51,7 @@ void gps_loop(void) {
         time_t now = time(NULL);
         if (((now - seconds) > GPS_WAIT_S) && !first_boot && error_counter < 4) {
             break;
-        } else if (((now - seconds) > GPS_ERROR_WAIT_S) && (first_boot || error_counter >= 4)) {
-            error_counter = 0;
+        } else if (((now - seconds) > GPS_ERROR_WAIT_S) && (first_boot || (error_counter % 3 == 0))) {
             break;
         }
     }
@@ -50,6 +59,9 @@ void gps_loop(void) {
         error_counter = 0;
     } else {
         error_counter++;
+        if (error_counter > 6) {
+            set_need_longer_sleep(true);
+        }
     }
     first_boot = false;
     gps.enable_input(false);
