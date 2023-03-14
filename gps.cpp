@@ -3,6 +3,7 @@
 #include <TinyGPS++.h>
 
 #define GPS_WAIT_S                      30
+#define GPS_ERROR_WAIT_S                90
 
 /**
  * GPS Setup
@@ -15,6 +16,8 @@ char buf[100] = {0};
 uint8_t offset = 0;
 bool ack_rec = false; // Have we recieved an ack from the gps
 bool ack = false; // Are waiting for an ack from gps
+uint8_t error_counter = 0;
+bool first_boot = true;
 
 void gps_time(char* buffer, uint8_t size) {
     printf(buffer, size, "%02d:%02d:%02d", gps_parser.time.hour(), gps_parser.time.minute(), gps_parser.time.second());
@@ -26,7 +29,7 @@ void gps_loop(void) {
     gps.enable_output(true);
     char incoming;
     time_t seconds = time(NULL);
-    while (!gps_parser.location.isValid()) {
+    while (true) {
         if (uint32_t num = gps.read(&incoming, 1)) {
             // If waiting for ack, also check for ack.
             if (ack)
@@ -35,10 +38,20 @@ void gps_loop(void) {
             //printf("%c", incoming);
             gps_parser.encode(incoming);
         }
-        if ((time(NULL) - seconds) > GPS_WAIT_S) {
+        time_t now = time(NULL);
+        if (((now - seconds) > GPS_WAIT_S) && !first_boot && error_counter < 4) {
+            break;
+        } else if (((now - seconds) > GPS_ERROR_WAIT_S) && (first_boot || error_counter >= 4)) {
+            error_counter = 0;
             break;
         }
     }
+    if (gps_parser.location.isValid()) {
+        error_counter = 0;
+    } else {
+        error_counter++;
+    }
+    first_boot = false;
     gps.enable_input(false);
     gps.enable_output(false);
 }
