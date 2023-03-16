@@ -119,7 +119,7 @@ void display_gps_info(void)  {
 void init_gps(void) {
     printf("\r\n GPS Init Start \r\n");
     if (gps.writable()) {
-        gps.write(NMEA_CONFIG_STRING, sizeof(NMEA_CONFIG_STRING));
+        //gps.write(NMEA_CONFIG_STRING, sizeof(NMEA_CONFIG_STRING));
         gps.write(PMTK_SET_NMEA_UPDATE_1HZ, sizeof(PMTK_SET_NMEA_UPDATE_1HZ));
         gps.write(PMTK_SET_BALLOON_MODE, sizeof(PMTK_SET_BALLOON_MODE));
         ack = true;
