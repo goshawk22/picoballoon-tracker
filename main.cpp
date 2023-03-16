@@ -286,7 +286,7 @@ static void send_gps() {
  */
 
 static void send_message() {
-    if (gps_parser.location.isValid()) {
+    if (is_fix_valid()) {
         send_gps();
     } else {
         send_status();

@@ -19,6 +19,7 @@ bool ack = false; // Are waiting for an ack from gps
 uint8_t error_counter = 0;
 bool first_boot = true;
 bool need_longer_sleep = false;
+uint32_t last_fix_count = 0;
 
 bool get_need_longer_sleep(void) {
     return need_longer_sleep;
@@ -26,36 +27,46 @@ bool get_need_longer_sleep(void) {
 
 void set_need_longer_sleep(bool set_bool) {
     need_longer_sleep = set_bool;
-    error_counter = 0;
+    if (!set_bool)
+        error_counter = 0;
 }
 
 void gps_time(char* buffer, uint8_t size) {
     printf(buffer, size, "%02d:%02d:%02d", gps_parser.time.hour(), gps_parser.time.minute(), gps_parser.time.second());
 }
 
-void gps_loop(void) {
-    printf("\r\n GPS Loop Start \r\n");
-    gps.enable_input(true);
-    gps.enable_output(true);
+void gps_read(void) {
     char incoming;
-    time_t seconds = time(NULL);
-    while (true) {
+    while (gps.readable()) {
         if (uint32_t num = gps.read(&incoming, 1)) {
             // If waiting for ack, also check for ack.
             if (ack)
                 ack_rec = wait_for_ack(incoming);
-        
+            
             //printf("%c", incoming);
             gps_parser.encode(incoming);
         }
+    }
+}
+
+void gps_loop(void) {
+    printf("\r\n GPS Loop Start \r\n");
+    gps.enable_input(true);
+    gps.enable_output(true);
+    time_t seconds = time(NULL);
+    while (true) {
+        gps_read();
+
         time_t now = time(NULL);
-        if (((now - seconds) > GPS_WAIT_S) && !first_boot && error_counter < 4) {
+        if (((now - seconds) > GPS_WAIT_S) && !first_boot && (error_counter % 3 != 0)) {
             break;
         } else if (((now - seconds) > GPS_ERROR_WAIT_S) && (first_boot || (error_counter % 3 == 0))) {
             break;
+        } else if ((gps_parser.sentencesWithFix() - last_fix_count > 10) && gps_parser.satellites.value() > 3) {
+            break;
         }
     }
-    if (gps_parser.location.isValid()) {
+    if (last_fix_count != gps_parser.sentencesWithFix()) {
         error_counter = 0;
     } else {
         error_counter++;
@@ -153,4 +164,16 @@ bool enter_gps_standby(void) {
 
 void exit_gps_standby(void) {
     gps.write(WAKEUP_STRING, sizeof(WAKEUP_STRING));
+}
+
+// Can only really be used once per transmission loop
+bool is_fix_valid(void) {
+    uint32_t now_fix_count;
+    now_fix_count = gps_parser.sentencesWithFix();          // Did we get a new fix?
+    if (now_fix_count != last_fix_count) {
+        last_fix_count = now_fix_count;
+        return true;
+    } else {
+        return false;
+    }
 }
