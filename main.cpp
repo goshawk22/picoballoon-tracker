@@ -26,6 +26,7 @@
 #include "trace_helper.h"
 #include "lora_radio_helper.h"
 #include "gps.h"
+#include "BMP280.h"
 
 using namespace events;
 
@@ -110,6 +111,33 @@ void pack_lat_lon(double lat, double lon) {
   tx_buffer[3] = (LongitudeBinary >> 16) & 0xFF;
   tx_buffer[4] = (LongitudeBinary >> 8) & 0xFF;
   tx_buffer[5] = LongitudeBinary & 0xFF;
+}
+
+void packBMP280Stuff(void) {
+    float raw_temp;
+    uint16_t temp;
+    uint32_t pressure;
+
+    sleep_manager_lock_deep_sleep();
+    /**
+     * BMP280 I2C
+     */
+    BMP280 bmp280(PA_11, PA_12, 0x76);
+    bmp280.initialize();
+    
+    raw_temp = bmp280.getTemperature();
+    pressure = bmp280.getPressure();
+    
+    temp = int(raw_temp * 10 + 0.5) + 128; // Encode the temperature to avoid negatives.
+
+    tx_buffer[10] = (pressure >> 16) & 0xFF;
+    tx_buffer[11] = (pressure >> 8) & 0xFF;
+    tx_buffer[12] = pressure & 0xFF;
+
+    tx_buffer[13] = (temp >> 8) & 0xFF;
+    tx_buffer[14] = temp & 0xFF;
+    bmp280.deInit();
+    sleep_manager_unlock_deep_sleep();
 }
 
 /**
