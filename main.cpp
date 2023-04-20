@@ -387,6 +387,8 @@ static void lora_event_handler(lorawan_event_t event)
             break;
         case JOIN_FAILURE:
             printf("\r\n OTAA Failed - Check Keys \r\n");
+            standby(SLOW_TX_TIMER);
+            system_reset();
             break;
         case UPLINK_REQUIRED:
             printf("\r\n Uplink required by NS \r\n");
