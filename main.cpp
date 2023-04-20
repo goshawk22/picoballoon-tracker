@@ -97,8 +97,9 @@ DigitalOut p_vcc(PB_5);
  */
 AnalogIn voltage(PB_3);
 
-
-// Store Lat & Long in six bytes of payload
+/**
+ * Store Lat & Long in six bytes of payload
+ */
 void pack_lat_lon(double lat, double lon) {
   uint32_t LatitudeBinary;
   uint32_t LongitudeBinary;
@@ -113,12 +114,16 @@ void pack_lat_lon(double lat, double lon) {
   tx_buffer[5] = LongitudeBinary & 0xFF;
 }
 
+/**
+ * Store BMP280 data in 5 bytes of payload
+ */
 void packBMP280Stuff(bool gps_packet) {
     float raw_temp;
     uint16_t temp;
     uint32_t pressure;
 
     sleep_manager_lock_deep_sleep();
+
     /**
      * BMP280 I2C
      */
@@ -213,6 +218,9 @@ int main(void)
     return 0;
 }
 
+/**
+ * Enter deep sleep
+ */
 void standby(Kernel::Clock::duration_u32 sec) {
     sleep_manager_unlock_deep_sleep();
     mbed_file_handle(STDIN_FILENO)->enable_input(false);
@@ -227,6 +235,9 @@ void standby(Kernel::Clock::duration_u32 sec) {
     gps_loop();
 }
 
+/**
+ * Transmit a payload when we don't have a gps fix
+ */
 static void send_no_gps() {    
     uint8_t packet_len = 6;
     int16_t retcode;
@@ -257,6 +268,9 @@ static void send_no_gps() {
     memset(tx_buffer, 0, sizeof(tx_buffer));
 }
 
+/**
+ * Transmit a payload with GPS
+ */
 static void send_gps() {
     uint16_t packet_len = 16;
     int16_t retcode;
@@ -316,7 +330,6 @@ static void send_gps() {
 /**
  * Sends a message to the Network Server
  */
-
 static void send_message() {
     if (is_fix_valid()) {
         send_gps();
@@ -361,7 +374,6 @@ static void lora_event_handler(lorawan_event_t event)
             if (lorawan.set_datarate(0) != LORAWAN_STATUS_OK) {
                 printf("\r\n set_datarate failed! \r\n");
             }
-
             printf("\r\n Data rate set successfully \r\n");
             
             // Start GPS Loop
