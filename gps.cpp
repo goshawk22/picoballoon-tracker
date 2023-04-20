@@ -75,6 +75,7 @@ void gps_loop(void) {
         }
     }
     first_boot = false;
+    ack = false;
     gps.enable_input(false);
     gps.enable_output(false);
 }
