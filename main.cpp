@@ -188,14 +188,6 @@ int main(void)
 
     printf("\r\n Adaptive data rate (ADR) - Disabled \r\n");
 
-    // Set data rate
-    if (lorawan.set_datarate(0) != LORAWAN_STATUS_OK) {
-        printf("\r\n set_datarate failed! \r\n");
-        return -1;
-    }
-
-    printf("\r\n Data rate set successfully \r\n");
-
     retcode = lorawan.connect();
 
     if (retcode == LORAWAN_STATUS_OK ||
@@ -352,6 +344,14 @@ static void lora_event_handler(lorawan_event_t event)
     switch (event) {
         case CONNECTED:
             printf("\r\n Connection - Successful \r\n");
+
+            // Set data rate
+            if (lorawan.set_datarate(0) != LORAWAN_STATUS_OK) {
+                printf("\r\n set_datarate failed! \r\n");
+            }
+
+            printf("\r\n Data rate set successfully \r\n");
+            
             // Start GPS Loop
             init_gps();
             gps_loop();
