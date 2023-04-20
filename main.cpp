@@ -278,8 +278,8 @@ static void send_gps() {
     pack_lat_lon(lat, lon);
 
     altitude = (uint16_t)gps_parser.altitude.meters();
-    if (altitude < 0)
-        altitude = 0; // avoid negatives, they are most likely a result of a poor fix or bug in the code and it's easier to use unsigned integers.
+    if (altitude <= 0)
+        altitude = 1; // avoid negatives, they are most likely a result of a poor fix or bug in the code and it's easier to use unsigned integers.
 
     speed = (uint16_t)gps_parser.speed.kmph();  // convert from double
     if (speed > 255)
