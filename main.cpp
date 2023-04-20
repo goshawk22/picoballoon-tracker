@@ -113,7 +113,7 @@ void pack_lat_lon(double lat, double lon) {
   tx_buffer[5] = LongitudeBinary & 0xFF;
 }
 
-void packBMP280Stuff(void) {
+void packBMP280Stuff(bool gps_packet) {
     float raw_temp;
     uint16_t temp;
     uint32_t pressure;
@@ -129,13 +129,21 @@ void packBMP280Stuff(void) {
     pressure = bmp280.getPressure();
     
     temp = int(raw_temp * 10 + 0.5) + 128; // Encode the temperature to avoid negatives.
+    if (gps_packet) {
+        tx_buffer[11] = (pressure >> 16) & 0xFF;
+        tx_buffer[12] = (pressure >> 8) & 0xFF;
+        tx_buffer[13] = pressure & 0xFF;
 
-    tx_buffer[10] = (pressure >> 16) & 0xFF;
-    tx_buffer[11] = (pressure >> 8) & 0xFF;
-    tx_buffer[12] = pressure & 0xFF;
+        tx_buffer[14] = (temp >> 8) & 0xFF;
+        tx_buffer[15] = temp & 0xFF;
+    } else {
+        tx_buffer[1] = (pressure >> 16) & 0xFF;
+        tx_buffer[2] = (pressure >> 8) & 0xFF;
+        tx_buffer[3] = pressure & 0xFF;
 
-    tx_buffer[13] = (temp >> 8) & 0xFF;
-    tx_buffer[14] = temp & 0xFF;
+        tx_buffer[4] = (temp >> 8) & 0xFF;
+        tx_buffer[5] = temp & 0xFF;
+    }
     bmp280.deInit();
     sleep_manager_unlock_deep_sleep();
 }
@@ -219,8 +227,8 @@ void standby(Kernel::Clock::duration_u32 sec) {
     gps_loop();
 }
 
-static void send_status() {    
-    uint8_t packet_len = 1;
+static void send_no_gps() {    
+    uint8_t packet_len = 6;
     int16_t retcode;
 
     float raw_adc;
@@ -229,9 +237,11 @@ static void send_status() {
     uint8_t battery_packed;
 
     raw_adc = voltage.read();
-    calc_voltage = ((3.3f*raw_adc*(5.0f))/(3.0f))*(1.3f);
+    calc_voltage = (3.3f*raw_adc*(2.0f));
     battery_packed = (calc_voltage - 2)*(255/2.3f);
     tx_buffer[0] = battery_packed & 0xFF;
+
+    packBMP280Stuff(false);
 
     retcode = lorawan.send(STATUS_PORT, tx_buffer, packet_len,
                            MSG_UNCONFIRMED_FLAG);
@@ -248,7 +258,7 @@ static void send_status() {
 }
 
 static void send_gps() {
-    uint16_t packet_len = 11;
+    uint16_t packet_len = 16;
     int16_t retcode;
 
     double lat;
@@ -283,9 +293,11 @@ static void send_gps() {
     tx_buffer[9] = sats & 0xFF;
 
     raw_adc = voltage.read();
-    calc_voltage = ((3.3f*raw_adc*(5.0f))/(3.0f))*(1.3f);
+    calc_voltage = (3.3f*raw_adc*(2.0f));
     battery_packed = (calc_voltage - 2)*(255/2.3f);
     tx_buffer[10] = battery_packed & 0xFF;
+
+    packBMP280Stuff(true);
 
     retcode = lorawan.send(GPS_PORT, tx_buffer, packet_len,
                            MSG_UNCONFIRMED_FLAG);
@@ -309,7 +321,7 @@ static void send_message() {
     if (is_fix_valid()) {
         send_gps();
     } else {
-        send_status();
+        send_no_gps();
     }
 }
 
